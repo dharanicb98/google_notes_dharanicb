@@ -1,0 +1,84 @@
+body {
+    background-color: #f7fafc;
+  }
+  
+  body.dark {
+    background-color: #2d3748;
+  }
+  
+  input, textarea {
+    border-radius: 0.25rem;
+  }
+  
+  button {
+    transition: background-color 0.3s ease;
+  }
+  
+  button:hover {
+    opacity: 0.9;
+  }
+  
+  #note-form {
+    background-color: #ffffff;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  #note-form.dark {
+    background-color: #2d3748;
+    color: #ffffff;
+  }
+  
+  #notes-list .note {
+    background-color: #ffffff;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  #notes-list .note.dark {
+    background-color: #2d3748;
+    color: #ffffff;
+  }
+  
+  #search-bar {
+    width: 200px;
+  }
+  
+  
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    @apply bg-gray-100 text-gray-900;
+}
+
+.navbar {
+    @apply flex justify-between items-center p-4 bg-white shadow-md;
+}
+
+.sidebar {
+    @apply w-64 h-screen bg-white shadow-lg;
+}
+
+.main-content {
+    @apply flex-1 p-6;
+}
+
+.note {
+    @apply p-4 rounded-lg shadow-md mb-4;
+}
+
+.note-actions {
+    @apply flex justify-end space-x-2 mt-2;
+}
+
+#notes-container {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4;
+}
+
+#search-bar {
+    @apply p-2 border border-gray-300 rounded-lg;
+}
