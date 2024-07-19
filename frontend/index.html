@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,27 +23,77 @@
   <div class="container mx-auto p-4 mt-4 flex">
     <aside class="w-1/4 pr-4">
       <ul>
-        <li><button id="view-notes" class="w-full bg-gray-200 dark:bg-gray-700 text-left px-4 py-2 rounded mb-2">Notes</button></li>
-        <li><button id="view-archived" class="w-full bg-gray-200 dark:bg-gray-700 text-left px-4 py-2 rounded mb-2">Archived</button></li>
-        <li><button id="view-trash" class="w-full bg-gray-200 dark:bg-gray-700 text-left px-4 py-2 rounded mb-2">Trash</button></li>
-        <li><button id="view-reminders" class="w-full bg-gray-200 dark:bg-gray-700 text-left px-4 py-2 rounded mb-2">Reminders</button></li>
-        <li><button id="view-labels" class="w-full bg-gray-200 dark:bg-gray-700 text-left px-4 py-2 rounded mb-2">Edit Labels</button></li>
+        <li><button id="show-notes" class="w-full bg-gray-200 dark:bg-gray-700 text-left px-4 py-2 rounded mb-2">Notes</button></li>
+        <li><button id="show-archived-notes" class="w-full bg-gray-200 dark:bg-gray-700 text-left px-4 py-2 rounded mb-2">Archived</button></li>
+        <li><button id="show-trashed-notes" class="w-full bg-gray-200 dark:bg-gray-700 text-left px-4 py-2 rounded mb-2">Trash</button></li>
+        
       </ul>
     </aside>
     <main class="w-3/4">
-      <div id="note-form" class="mb-4 bg-white dark:bg-gray-900 p-4 rounded shadow">
+
+      <!-- <div id="note-form" class="mb-4 bg-white dark:bg-gray-900 p-4 rounded shadow">
         <input type="hidden" id="note-id">
         <input type="text" id="note-title" class="border p-2 w-full mb-2 rounded" placeholder="Title">
         <textarea id="note-content" class="border p-2 w-full mb-2 rounded" placeholder="Content"></textarea>
+
+
         <div class="flex justify-between">
           <button id="save-note" class="bg-blue-500 text-white px-4 py-2 rounded">Save Note</button>
           <button id="delete-note" class="bg-red-500 text-white px-4 py-2 rounded hidden">Delete Note</button>
         </div>
+      </div> -->
+
+      <form id="note-form" class="mb-4 bg-white dark:bg-gray-900 p-4 rounded shadow">
+        <input type="hidden" id="note-id" />
+        
+        <label for="note-title" >Title:</label>
+        <input type="text" class="border p-2 w-full mb-2 rounded" placeholder="Title" id="note-title" required />
+        
+        <label for="note-content">Content:</label>
+        <textarea id="note-content" class="border p-2 w-full mb-2 rounded" placeholder="Content" required></textarea>
+        
+        <label for="note-tags">Tags (comma-separated):</label>
+        <input type="text"  class="border p-2 w-full mb-2 rounded" id="note-tags" placeholder="Enter tags (comma-separated)" />
+        
+        <div class="flex items-center">
+          <label for="note-backgroundColor">Background Color:</label>
+          <input type="color"   id="note-backgroundColor" value="#ffffff" />
+        </div>
+
+        <br/>
+        <button type="button" id="save-note" class="bg-blue-500 text-white px-4 py-2 rounded">Save Note</button>
+    </form>
+
+   
+    <form id="note-edit-form" class="mb-4 bg-white dark:bg-gray-900 p-4 rounded shadow">
+      <input type="hidden" id="edit-note-id" />
+      
+      <label for="edit-note-title">Title:</label>
+      <input type="text" class="border p-2 w-full mb-2 rounded" placeholder="Title" id="edit-note-title" required />
+      
+      <label for="edit-note-content">Content:</label>
+      <textarea id="edit-note-content" class="border p-2 w-full mb-2 rounded" placeholder="Content" required></textarea>
+      
+      <label for="edit-note-tags">Tags (comma-separated):</label>
+      <input type="text" id="edit-note-tags" class="border p-2 w-full mb-2 rounded" id="note-tags" placeholder="Enter tags (comma-separated)" />
+      
+      <div  class="flex items-center">
+        <label for="edit-note-backgroundColor">Background Color:</label>
+        <input type="color" id="edit-note-backgroundColor" />
       </div>
+
+      <br/>
+      
+      <button type="button" class="bg-blue-500 text-white px-4 py-2 rounded" id="update-note">Update Note</button>
+    </form>
+
+    
+
       <div id="notes-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
     </main>
   </div>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="js/notes.js"></script>
+  <script src="js/sidebar.js"></script>
 </body>
-</html>
+</html> 

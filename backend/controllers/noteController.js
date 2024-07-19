@@ -2,20 +2,43 @@ const Note = require('../models/noteModel');
 
 exports.createNote = async (req, res) => {
     const { title, content, tags, backgroundColor } = req.body;
-    const note = new Note({
-        userId: req.userId,
-        title,
-        content,
-        tags,
-        backgroundColor
-    });
-    await note.save();
-    res.status(201).json({ note });
+    if (!title || !content) {
+        return res.status(400).json({ message: 'Title and content are required' });
+    }
+
+    try {
+        const note = new Note({
+            userId: req.userId,
+            title,
+            content,
+            tags: tags || [],
+            backgroundColor: backgroundColor || '#ffffff'
+        });
+        await note.save();
+        res.status(201).json({ note });
+    } catch (error) {
+        console.error('Error creating note:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
 };
 
 exports.getNotes = async (req, res) => {
     const notes = await Note.find({ userId: req.userId, trashed: false, archived: false });
     res.status(200).json({ notes });
+};
+
+exports.getNoteById = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const note = await Note.findOne({ _id: id, userId: req.userId });
+        if (!note) {
+            return res.status(404).json({ message: 'Note not found' });
+        }
+        res.status(200).json({ note });
+    } catch (error) {
+        console.error('Error fetching note by ID:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
 };
 
 exports.updateNote = async (req, res) => {
@@ -32,8 +55,13 @@ exports.deleteNote = async (req, res) => {
 };
 
 exports.getArchivedNotes = async (req, res) => {
-    const notes = await Note.find({ userId: req.userId, archived: true });
-    res.status(200).json({ notes });
+    try {
+        const notes = await Note.find({ userId: req.userId, archived: true });
+        res.status(200).json({ notes });
+    } catch (error) {
+        console.error('Error fetching archived notes:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
 };
 
 exports.getTrashedNotes = async (req, res) => {
@@ -43,7 +71,21 @@ exports.getTrashedNotes = async (req, res) => {
 
 exports.archiveNote = async (req, res) => {
     const { id } = req.params;
-    const note = await Note.findByIdAndUpdate(id, { archived: true, trashed: false });
+    try {
+        const note = await Note.findByIdAndUpdate(id, { archived: true, trashed: false }, { new: true });
+        if (!note) {
+            return res.status(404).json({ message: 'Note not found' });
+        }
+        res.status(200).json({ note });
+    } catch (error) {
+        console.error('Error archiving note:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+exports.unarchiveNote = async (req, res) => {
+    const { id } = req.params;
+    const note = await Note.findByIdAndUpdate(id, { archived: false });
     res.status(200).json({ note });
 };
 

@@ -82,3 +82,7 @@ body {
 #search-bar {
     @apply p-2 border border-gray-300 rounded-lg;
 }
+.hidden {
+  display: none;
+}
+

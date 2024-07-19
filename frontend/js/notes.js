@@ -1,164 +1,332 @@
-$(document).ready(function() {
-  const token = localStorage.getItem('token');
-  if (!token) {
-      window.location.href = 'login.html';
-  }
+$(document).ready(function () {
+    const apiUrl = 'http://localhost:3000/api/notes';
+    const token = localStorage.getItem('token'); // Retrieve token
 
-  // Function to fetch notes and populate the UI
-  function fetchNotes() {
-      try {
-          $.ajax({
-              url: 'http://localhost:3000/api/notes',
-              method: 'GET',
-              headers: { 'Authorization': token },
-              success: function(response) {
-                  const notesList = $('#notes-list');
-                  notesList.empty();
-                  response.notes.forEach(note => {
-                      const noteElement = `
-                          <div class="border p-4 mb-4" style="background-color: ${note.backgroundColor}">
-                              <h3 class="text-xl">${note.title}</h3>
-                              <p>${note.content}</p>
-                              <p>Created At: ${formatDate(note.createdAt)}</p>
-                              <p>Last Updated: ${formatDate(note.updatedAt)}</p>
-                              <div>
-                                  <button class="edit-note bg-blue-500 text-white px-4 py-2 rounded mr-2" data-id="${note._id}">Edit</button>
-                                  <button class="delete-note bg-red-500 text-white px-4 py-2 rounded" data-id="${note._id}">Delete</button>
-                              </div>
-                          </div>
-                      `;
-                      notesList.append(noteElement);
-                  });
-              },
-              error: function(xhr) {
-                  const errorMessage = xhr.responseJSON.message || 'Failed to fetch notes';
-                  alert(errorMessage);
-              }
-          });
-      } catch (error) {
-          console.error('Error fetching notes:', error);
-          alert('An error occurred while fetching notes');
-      }
-  }
-
-  // Function to format date
-  function formatDate(dateString) {
-      const options = { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' };
-      return new Date(dateString).toLocaleDateString('en-US', options);
-  }
-
-  // Fetch notes on page load
-  fetchNotes();
-
-  // Save or update note
-  $('#save-note').on('click', function() {
-      const noteId = $('#note-id').val();
-      const title = $('#note-title').val();
-      const content = $('#note-content').val();
-
-      const method = noteId ? 'PUT' : 'POST';
-      const url = noteId ? `http://localhost:3000/api/notes/${noteId}` : 'http://localhost:3000/api/notes';
-
-      try {
-          $.ajax({
-              url: url,
-              method: method,
-              headers: { 'Authorization': token },
-              contentType: 'application/json',
-              data: JSON.stringify({ title, content }),
-              success: function() {
-                  fetchNotes();
-                  $('#note-id').val('');
-                  $('#note-title').val('');
-                  $('#note-content').val('');
-                  $('#save-note').text('Save Note');
-                  $('#delete-note').addClass('hidden');
-              },
-              error: function(xhr) {
-                  const errorMessage = xhr.responseJSON.message || 'Failed to save note';
-                  alert(errorMessage);
-              }
-          });
-      } catch (error) {
-          console.error('Error saving note:', error);
-          alert('An error occurred while saving note');
-      }
-  });
-
-  // Edit note
-  $(document).on('click', '.edit-note', function() {
-      const noteId = $(this).data('id');
-      $('#note-id').val(noteId);
-      $('#save-note').text('Update Note');
-      $('#delete-note').removeClass('hidden').data('id', noteId);
-      
-      // Fetch the note details and populate the input fields
-      $.ajax({
-          url: `http://localhost:3000/api/notes/${noteId}`,
-          method: 'GET',
-          headers: { 'Authorization': token },
-          success: function(response) {
-              const note = response.note;
-              $('#note-title').val(note.title); // Populate title input
-              $('#note-content').val(note.content); // Populate content textarea
-          },
-          error: function(xhr) {
-              const errorMessage = xhr.responseJSON.message || 'Failed to fetch note';
-              alert(errorMessage);
-          }
-      });
-  });
-
-  // Delete note
-  $(document).on('click', '.delete-note', function() {
-      const noteId = $(this).data('id');
-      if (confirm('Are you sure you want to delete this note?')) {
-          $.ajax({
-              url: `http://localhost:3000/api/notes/${noteId}`,
-              method: 'DELETE',
-              headers: { 'Authorization': token },
-              success: function() {
-                  fetchNotes();
-                  $('#note-id').val('');
-                  $('#note-title').val('');
-                  $('#note-content').val('');
-                  $('#save-note').text('Save Note');
-                  $('#delete-note').addClass('hidden');
-              },
-              error: function(xhr) {
-                  const errorMessage = xhr.responseJSON.message || 'Failed to delete note';
-                  alert(errorMessage);
-              }
-          });
-      }
-  });
-
-  // Logout
-  $('#logout').on('click', function() {
-      localStorage.removeItem('token');
-      window.location.href = 'login.html';
-  });
-
-  // tooggle-theme
-
-  $('#toggle-theme').on('click', function() {
-    $('body').toggleClass('dark');
-    $('#note-form').toggleClass('dark');
-    $('#notes-list .note').toggleClass('dark');
-    if ($('body').hasClass('dark')) {
-      $('#toggle-theme').text('Light Mode');
-    } else {
-      $('#toggle-theme').text('Dark Mode');
+    function handleApiError(xhr) {
+        if (xhr.status === 401) {
+            console.error('Unauthorized access - 401');
+            window.location.href = 'login.html';
+        } else {
+            console.error('API Error:', xhr);
+        }
     }
-  });
 
-// search-notes
+    function loadNotes() {
+        $.ajax({
+            url: apiUrl,
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            success: function (data) {
+                console.log('Fetched Notes:', data);
+                displayNotes(data.notes, 'notes'); // Pass page type
+            },
+            error: handleApiError
+        });
+    }
 
-$('#search-bar').on('keyup', function() {
-  const searchTerm = $(this).val().toLowerCase();
-  $('#notes-list .note').filter(function() {
-    $(this).toggle($(this).find('.note-title').text().toLowerCase().indexOf(searchTerm) > -1);
-  });
+    function displayNotes(notes, type) {
+        const notesList = $('#notes-list');
+        notesList.empty();
+        
+        if (!notes.length) {
+            notesList.append('<p>No notes available</p>');
+            return;
+        }
+    
+        notes.forEach(note => {
+            let buttons = '';
+            if (type === 'notes') {
+                buttons = `
+                    <button class="edit-note bg-blue-500 text-white px-4 py-2 rounded" data-id="${note._id}">Edit</button>
+                    <button class="delete-note bg-red-500 text-white px-4 py-2 rounded" data-id="${note._id}">Delete</button>
+                    <button class="archive-note bg-yellow-500 text-white px-4 py-2 rounded ${note.archived ? 'hidden' : ''}" data-id="${note._id}">Archive</button>
+                `;
+            } else if (type === 'archived') {
+                buttons = `
+                    <button class="unarchive-note bg-green-500 text-white px-4 py-2 rounded" data-id="${note._id}">Unarchive</button>
+                `;
+            } else if (type === 'trashed') {
+                buttons = `
+                    <button class="untrash-note bg-gray-500 text-white px-4 py-2 rounded" data-id="${note._id}">Untrash</button>
+                `;
+            }
+    
+            const tags = note.tags.length ? note.tags.map(tag => `<span class="bg-gray-200 text-gray-800 px-2 py-1 rounded mr-1">${tag}</span>`).join('') : '';
+    
+            const noteElement = $(`
+                <div class="bg-white dark:bg-gray-900 p-4 rounded shadow" style="background-color: ${note.backgroundColor || '#ffffff'}">
+                    <h2 class="text-xl font-bold">${note.title}</h2>
+                    <p>${note.content}</p>
+                    <div class="flex flex-wrap mb-2">
+                        ${tags}
+                    </div>
+                    <div class="flex justify-between mt-2">
+                        ${buttons}
+                    </div>
+                </div>
+            `);
+            notesList.append(noteElement);
+        });
+    }
+    
+
+    function showNotes() {
+        $('#note-edit-form').hide();
+        $('#note-form').show();
+        loadNotes();
+    }
+
+    function showArchivedNotes() {
+        $('#note-form').hide();
+        $('#note-edit-form').hide();
+        $.ajax({
+            url: `${apiUrl}/archived`,
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            success: function (data) {
+                displayNotes(data.notes, 'archived'); // Pass page type
+            },
+            error: handleApiError
+        });
+    }
+
+    function showTrashedNotes() {
+        $('#note-form').hide();
+        $('#note-edit-form').hide();
+        $.ajax({
+            url: `${apiUrl}/trashed`,
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            success: function (data) {
+                displayNotes(data.notes, 'trashed'); // Pass page type
+            },
+            error: handleApiError
+        });
+    }
+
+    $('#show-notes').click(showNotes);
+    $('#show-archived-notes').click(showArchivedNotes);
+    $('#show-trashed-notes').click(showTrashedNotes);
+
+    $('#logout').click(function () {
+        console.log('Logging out'); // Debug logout
+        $.ajax({
+            url: 'http://localhost:3000/api/logout', // Adjust the logout endpoint as needed
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            success: function () {
+                console.log('Logout successful'); // Debug logout success
+                // Clear the token from localStorage
+                localStorage.removeItem('token');
+                // Redirect to login page
+                window.location.href = 'login.html';
+            },
+            error: handleApiError
+        });
+    });
+
+    $('#save-note').click(function () {
+        const id = $('#note-id').val();
+        const title = $('#note-title').val();
+        const content = $('#note-content').val();
+        const tags = $('#note-tags').val().split(',').map(tag => tag.trim());
+        const backgroundColor = $('#note-backgroundColor').val();
+    
+        if (!title || !content) {
+            alert('Title and content are required');
+            return;
+        }
+    
+        $.ajax({
+            url: id ? `${apiUrl}/${id}` : apiUrl,
+            method: id ? 'PUT' : 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ title, content, tags, backgroundColor }),
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            success: function () {
+                showNotes(); // Refresh the notes list
+                $('#note-title').val('');
+                $('#note-content').val('');
+                $('#note-tags').val('');
+                $('#note-backgroundColor').val('#ffffff');
+                $('#note-id').val('');
+            },
+            error: handleApiError
+        });
+    });
+
+    $(document).on('click', '.delete-note', function () {
+        const id = $(this).data('id');
+        console.log('Deleting note:', id); // Debug note delete
+        $.ajax({
+            url: `${apiUrl}/${id}`,
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            success: function () {
+                console.log('Note deleted successfully'); // Debug note delete success
+                showNotes();
+            },
+            error: handleApiError
+        });
+    });
+
+    $(document).on('click', '.edit-note', function () {
+        const id = $(this).data('id');
+        $.ajax({
+            url: `${apiUrl}/${id}`,
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            success: function (response) {
+                const note = response.note;
+                $('#edit-note-id').val(note._id);
+                $('#edit-note-title').val(note.title);
+                $('#edit-note-content').val(note.content);
+                $('#edit-note-tags').val(note.tags.join(', '));
+                $('#edit-note-backgroundColor').val(note.backgroundColor);
+                
+                // Show the edit form
+                $('#note-form').hide();
+                $('#note-edit-form').show();
+            },
+            error: handleApiError
+        });
+    });
+
+    $(document).on('click', '.archive-note', function () {
+        const id = $(this).data('id');
+        console.log('Archiving note:', id); // Debug note archive
+        $.ajax({
+            url: `${apiUrl}/archive/${id}`,
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            success: function () {
+                console.log('Note archived successfully'); // Debug note archive success
+                showNotes();
+            },
+            error: handleApiError
+        });
+    });
+
+    $(document).on('click', '.unarchive-note', function () {
+        const id = $(this).data('id');
+        console.log('Unarchiving note:', id); // Debug note unarchive
+        $.ajax({
+            url: `${apiUrl}/unarchive/${id}`,
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            success: function () {
+                console.log('Note unarchived successfully'); // Debug note unarchive success
+                showArchivedNotes();
+            },
+            error: handleApiError
+        });
+    });
+
+    $(document).on('click', '.untrash-note', function () {
+        const id = $(this).data('id');
+        console.log('Untrashing note:', id); // Debug note untrash
+        $.ajax({
+            url: `${apiUrl}/restore/${id}`,
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            success: function () {
+                console.log('Note untrashed successfully'); // Debug note untrash success
+                showTrashedNotes();
+            },
+            error: handleApiError
+        });
+    });
+
+    $('#update-note').click(function () {
+        const id = $('#edit-note-id').val();
+        const title = $('#edit-note-title').val();
+        const content = $('#edit-note-content').val();
+        const tags = $('#edit-note-tags').val().split(',').map(tag => tag.trim());
+        const backgroundColor = $('#edit-note-backgroundColor').val();
+    
+        $.ajax({
+            url: `${apiUrl}/${id}`,
+            method: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify({ title, content, tags, backgroundColor }),
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            success: function () {
+                console.log('Note updated successfully'); // Debug note update success
+                showNotes(); // Refresh the notes list
+                $('#note-title').val('');
+                $('#note-content').val('');
+                $('#note-tags').val('');
+                $('#note-backgroundColor').val('#ffffff');
+                $('#note-id').val('');
+                $('#note-edit-form').hide();
+                $('#note-form').show();
+            },
+            error: handleApiError
+        });
+    });
+
+    $('#search-bar').on('input', function () {
+        const query = $(this).val().toLowerCase();
+        filterNotes(query);
+    });
+
+    function filterNotes(query) {
+        const notesList = $('#notes-list');
+        const notes = notesList.find('.bg-white, .bg-gray-900'); // Adjust selector based on note background
+
+        notes.each(function () {
+            const title = $(this).find('h2').text().toLowerCase();
+            const content = $(this).find('p').text().toLowerCase();
+            const tags = $(this).find('.bg-gray-200').text().toLowerCase();
+
+            if (title.includes(query) || content.includes(query) || tags.includes(query)) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
+    }
+
+    $('#toggle-theme').on('click', function() {
+        $('body').toggleClass('dark');
+        $('#note-form').toggleClass('dark');
+        $('#notes-list .bg-white').toggleClass('bg-gray-900');
+        $('#notes-list .bg-gray-900').toggleClass('bg-gray-800');
+
+        const themeText = $('body').hasClass('dark') ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+        $('#toggle-theme').text(themeText);
+    });
+
+    // Ensure initial theme state
+    if ($('body').hasClass('dark')) {
+        $('#toggle-theme').text('Switch to Light Mode');
+    } else {
+        $('#toggle-theme').text('Switch to Dark Mode');
+    }
+
+    // Initialize the page by showing the notes
+    showNotes();
 });
 
-});
